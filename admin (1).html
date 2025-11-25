@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - TasteBook</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles_admin.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <svg class="logo-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/>
+                    <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/>
+                    <path d="m2.1 21.8 6.4-6.3"/>
+                    <path d="m19 5-7 7"/>
+                </svg>
+                <span class="logo-text">TasteBook</span>
+            </a>
+
+            <nav class="nav">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/profile.html" class="nav-link">Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <div class="page-header">
+            <h1 class="page-title">Admin Dashboard</h1>
+            <p class="page-subtitle">Review and approve recipe submissions</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <p>Loading pending recipes...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <p class="empty-title">All caught up!</p>
+            <p class="empty-description">No pending recipes to review</p>
+        </div>
+
+        <!-- Pending Recipes List -->
+        <div id="recipes-list" class="pending-recipes" style="display: none;">
+            <!-- Sample Recipe Card -->
+            <div class="recipe-review-card">
+                <div class="card-header">
+                    <div class="card-title-row">
+                        <div class="title-section">
+                            <h3 class="card-title">
+                                Blueberry Pancakes
+                                <span class="badge">Breakfast</span>
+                            </h3>
+                            <p class="card-description">Submitted by chef_master • Nov 22, 2025</p>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-secondary" onclick="approveRecipe('1')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Approve
+                            </button>
+                            <button class="btn btn-sm btn-destructive" onclick="rejectRecipe('1')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="recipe-grid">
+                        <div>
+                            <img class="recipe-image" src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445" alt="Blueberry Pancakes">
+                            <p class="recipe-description">
+                                Fluffy pancakes loaded with fresh blueberries and maple syrup. Perfect for a weekend breakfast!
+                            </p>
+                            <div class="recipe-stats">
+                                <span class="stat">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    20 min
+                                </span>
+                                <span class="stat">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                    4 servings
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="section-title">Ingredients:</h4>
+                            <ul class="ingredients-list">
+                                <li>2 cups all-purpose flour</li>
+                                <li>2 tablespoons sugar</li>
+                                <li>2 teaspoons baking powder</li>
+                                <li>1 teaspoon salt</li>
+                                <li>2 eggs</li>
+                                <li>1 3/4 cups milk</li>
+                                <li>1/4 cup melted butter</li>
+                                <li>1 cup fresh blueberries</li>
+                            </ul>
+                            <h4 class="section-title">Instructions:</h4>
+                            <p class="instructions">1. Mix dry ingredients in a large bowl.
+2. Whisk together eggs, milk, and melted butter.
+3. Combine wet and dry ingredients until just mixed.
+4. Fold in blueberries gently.
+5. Cook on a hot griddle until bubbles form.
+6. Flip and cook until golden brown.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Another Sample Recipe Card -->
+            <div class="recipe-review-card">
+                <div class="card-header">
+                    <div class="card-title-row">
+                        <div class="title-section">
+                            <h3 class="card-title">
+                                Thai Green Curry
+                                <span class="badge">Dinner</span>
+                            </h3>
+                            <p class="card-description">Submitted by cooking_enthusiast • Nov 21, 2025</p>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-secondary" onclick="approveRecipe('2')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Approve
+                            </button>
+                            <button class="btn btn-sm btn-destructive" onclick="rejectRecipe('2')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="recipe-grid">
+                        <div>
+                            <img class="recipe-image" src="https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd" alt="Thai Green Curry">
+                            <p class="recipe-description">
+                                Aromatic Thai curry with chicken, vegetables, and coconut milk. Rich and flavorful!
+                            </p>
+                            <div class="recipe-stats">
+                                <span class="stat">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    35 min
+                                </span>
+                                <span class="stat">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                    4 servings
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="section-title">Ingredients:</h4>
+                            <ul class="ingredients-list">
+                                <li>500g chicken breast, sliced</li>
+                                <li>2 tablespoons green curry paste</li>
+                                <li>400ml coconut milk</li>
+                                <li>1 cup mixed vegetables</li>
+                                <li>Thai basil leaves</li>
+                                <li>Fish sauce to taste</li>
+                            </ul>
+                            <h4 class="section-title">Instructions:</h4>
+                            <p class="instructions">1. Heat oil in a wok over medium-high heat.
+2. Add curry paste and fry until fragrant.
+3. Add chicken and cook until sealed.
+4. Pour in coconut milk and bring to a simmer.
+5. Add vegetables and cook until tender.
+6. Season with fish sauce and garnish with basil.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Simulate loading
+        setTimeout(() => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('recipes-list').style.display = 'flex';
+        }, 1000);
+
+        function approveRecipe(id) {
+            if (confirm('Are you sure you want to approve this recipe?')) {
+                // Add your approve API call here
+                console.log('Approve recipe:', id);
+                alert('Recipe approved successfully!');
+                // Reload or remove the card from DOM
+            }
+        }
+
+        function rejectRecipe(id) {
+            if (confirm('Are you sure you want to reject this recipe? This action cannot be undone.')) {
+                // Add your reject API call here
+                console.log('Reject recipe:', id);
+                alert('Recipe rejected');
+                // Reload or remove the card from DOM
+            }
+        }
+    </script>
+</body>
+</html>
