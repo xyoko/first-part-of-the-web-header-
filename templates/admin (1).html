@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="styles_admin.css">
+    <link rel="stylesheet" href="static/css/styles_admin.css">
 </head>
 <body>
     <!-- Header -->
@@ -27,8 +27,8 @@
             </a>
 
             <nav class="nav">
-                <a href="/" class="nav-link">Home</a>
-                <a href="/profile.html" class="nav-link">Profile</a>
+                <a href="index-static.html" class="nav-link">Home</a>
+                <a href="profile.html" class="nav-link">Profile</a>
             </nav>
         </div>
     </header>
@@ -220,23 +220,27 @@
             document.getElementById('recipes-list').style.display = 'flex';
         }, 1000);
 
-        function approveRecipe(id) {
-            if (confirm('Are you sure you want to approve this recipe?')) {
-                // Add your approve API call here
-                console.log('Approve recipe:', id);
-                alert('Recipe approved successfully!');
-                // Reload or remove the card from DOM
-            }
-        }
 
-        function rejectRecipe(id) {
-            if (confirm('Are you sure you want to reject this recipe? This action cannot be undone.')) {
-                // Add your reject API call here
-                console.log('Reject recipe:', id);
-                alert('Recipe rejected');
-                // Reload or remove the card from DOM
-            }
-        }
+        function approveRecipe(id) {
+    fetch(`/recipes/${id}/approve`, { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            alert("Recipe approved!");
+            location.reload();
+        });
+}
+
+function rejectRecipe(id) {
+    fetch(`/recipes/${id}/reject`, { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            alert("Recipe rejected!");
+            location.reload();
+        });
+}
+
+
+
     </script>
 </body>
 </html>

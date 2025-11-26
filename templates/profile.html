@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - TasteBook</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="static/css/styles_profile.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <svg class="logo-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/>
+                    <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/>
+                    <path d="m2.1 21.8 6.4-6.3"/>
+                    <path d="m19 5-7 7"/>
+                </svg>
+                <span class="logo-text">TasteBook</span>
+            </a>
+
+            <nav class="nav">
+                <a href="index-static.html" class="nav-link">Home</a>
+                <a href="profile.html" class="nav-link">My Profile</a>
+                <button class="btn btn-outline" onclick="logout()">Logout</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Profile Header -->
+        <div id="profile-view" class="profile-header">
+            <div class="profile-info">
+                <div class="avatar">JD</div>
+                <div class="profile-details">
+                    <h1 class="profile-name">John Doe</h1>
+                    <p class="profile-bio">Food enthusiast and home cook. Love sharing my favorite recipes!</p>
+                    <div class="profile-actions">
+                        <button class="btn btn-primary" onclick="toggleEditMode()">Edit Profile</button>
+                        <a href="/add-recipe.html" class="btn btn-outline">Add Recipe</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Form (Hidden by default) -->
+        <div id="profile-edit" class="edit-form" style="display: none;">
+            <h2 style="margin-bottom: 1.5rem; font-family: var(--font-heading);">Edit Profile</h2>
+            <form id="edit-form">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input class="form-input" type="text" id="username" value="John Doe">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="bio">Bio</label>
+                    <textarea class="form-input" id="bio">Food enthusiast and home cook. Love sharing my favorite recipes!</textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-outline" onclick="toggleEditMode()">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('approved')">Approved Recipes</button>
+            <button class="tab" onclick="switchTab('pending')">Pending Approval</button>
+        </div>
+
+        <!-- Approved Recipes -->
+        <div id="approved-tab" class="tab-content active">
+            <div class="recipes-grid">
+                <!-- Sample Recipe Card -->
+                <div class="recipe-card">
+                    <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1546069901-ba9599a7e63c')"></div>
+                    <div class="recipe-content">
+                        <h3 class="recipe-name">Classic Carbonara</h3>
+                        <p class="recipe-description">Creamy Italian pasta with crispy bacon, parmesan, and black pepper</p>
+                        <div class="recipe-meta">
+                            <span>⏱️ 25 min</span>
+                            <span>🍽️ 4 servings</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recipe-card">
+                    <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe')"></div>
+                    <div class="recipe-content">
+                        <h3 class="recipe-name">Greek Salad</h3>
+                        <p class="recipe-description">Fresh Mediterranean salad with feta cheese, olives, and olive oil</p>
+                        <div class="recipe-meta">
+                            <span>⏱️ 15 min</span>
+                            <span>🍽️ 2 servings</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Recipes -->
+        <div id="pending-tab" class="tab-content">
+            <div class="recipes-grid">
+                <div class="recipe-card">
+                    <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445')"></div>
+                    <div class="recipe-content">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <h3 class="recipe-name">Blueberry Pancakes</h3>
+                            <span class="badge badge-pending">Pending</span>
+                        </div>
+                        <p class="recipe-description">Fluffy pancakes loaded with fresh blueberries</p>
+                        <div class="recipe-meta">
+                            <span>⏱️ 20 min</span>
+                            <span>🍽️ 4 servings</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+
+        function toggleEditMode() {
+            const viewDiv = document.getElementById('profile-view');
+            const editDiv = document.getElementById('profile-edit');
+            
+            if (viewDiv.style.display === 'none') {
+                viewDiv.style.display = 'block';
+                editDiv.style.display = 'none';
+            } else {
+                viewDiv.style.display = 'none';
+                editDiv.style.display = 'block';
+            }
+        }
+
+        function logout() {
+            // Implement logout logic
+            window.location.href = '/login.html';
+        }
+
+        document.getElementById('edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Add your update profile API call here
+            const username = document.getElementById('username').value;
+            const bio = document.getElementById('bio').value;
+            console.log('Update profile:', { username, bio });
+            toggleEditMode();
+        });
+    </script>
+</body>
+</html>

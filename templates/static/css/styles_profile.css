@@ -1,0 +1,336 @@
+:root {
+            --color-primary: hsl(16, 85%, 55%);
+            --color-primary-hover: hsl(16, 85%, 45%);
+            --color-secondary: hsl(145, 25%, 45%);
+            --color-background: hsl(35, 25%, 96%);
+            --color-foreground: hsl(25, 35%, 15%);
+            --color-muted: hsl(35, 20%, 90%);
+            --color-muted-foreground: hsl(25, 15%, 45%);
+            --color-border: hsl(35, 15%, 85%);
+            --color-card: hsl(0, 0%, 100%);
+            --font-heading: 'Quicksand', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --radius: 0.75rem;
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-background);
+            color: var(--color-foreground);
+            line-height: 1.6;
+            padding-top: 73px;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background-color: var(--color-card);
+            border-bottom: 1px solid var(--color-border);
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            color: var(--color-primary);
+        }
+
+        .logo-text {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--color-foreground);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-foreground);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--color-primary);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: calc(var(--radius) - 0.25rem);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--color-foreground);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--color-muted);
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .profile-header {
+            background-color: var(--color-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: start;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background-color: var(--color-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 600;
+            font-family: var(--font-heading);
+        }
+
+        .profile-details {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-bio {
+            color: var(--color-muted-foreground);
+            margin-bottom: 1rem;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin: 2rem 0;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: 0.9375rem;
+            color: var(--color-muted-foreground);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--color-foreground);
+        }
+
+        .tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .recipes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .recipe-card {
+            background-color: var(--color-card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s;
+        }
+
+        .recipe-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .recipe-image {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-size: cover;
+            background-position: center;
+            background-color: var(--color-muted);
+        }
+
+        .recipe-content {
+            padding: 1.5rem;
+        }
+
+        .recipe-name {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .recipe-description {
+            font-size: 0.875rem;
+            color: var(--color-muted-foreground);
+            margin-bottom: 1rem;
+        }
+
+        .recipe-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--color-muted-foreground);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+            background-color: var(--color-muted);
+            color: var(--color-muted-foreground);
+        }
+
+        .badge-pending {
+            background-color: hsl(45, 100%, 85%);
+            color: hsl(45, 60%, 35%);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--color-muted-foreground);
+        }
+
+        .empty-state-icon {
+            margin: 0 auto 1rem;
+            color: var(--color-muted-foreground);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            background-color: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: calc(var(--radius) - 0.25rem);
+            font-size: 0.9375rem;
+            font-family: var(--font-body);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--color-primary);
+        }
+
+        textarea.form-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .edit-form {
+            background-color: var(--color-card);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+        }
