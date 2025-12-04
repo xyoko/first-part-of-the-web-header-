@@ -1,0 +1,512 @@
+app.py(# app.py
+import os
+import json
+import secrets
+from flask import (
+    Flask, render_template, request, redirect, session,
+    jsonify, url_for, flash, abort
+)
+from werkzeug.utils import secure_filename
+from flask_wtf import CSRFProtect
+from flask_talisman import Talisman
+from flask_migrate import Migrate
+from flask_login import (
+    LoginManager, login_user, logout_user, login_required,
+    current_user
+)
+from config import DevelopmentConfig, ProductionConfig
+from models import db, User, Recipe, Rating, Comment, Post, Tag
+from blueprints.auth import bp as auth_bp
+from blueprints.main import bp as main_bp
+from blueprints.posts import bp as posts_bp
+from sqlalchemy import or_
+import re
+import logging
+from logging.handlers import RotatingFileHandler
+
+# Login manager needs to be visible at module level for the decorator
+login_manager = LoginManager()
+
+UPLOAD_FOLDER = "static/uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app = Flask(__name__, static_folder="static", template_folder="templates")
+cfg = os.environ.get('FLASK_CONFIG', 'DevelopmentConfig')
+if cfg == 'ProductionConfig' or os.environ.get('FLASK_ENV', '').lower() == 'production':
+    app.config.from_object('config.ProductionConfig')
+else:
+    app.config.from_object('config.DevelopmentConfig')
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+# Limit upload size (e.g., 8MB)
+app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
+# Allowed image extensions
+app.config["ALLOWED_IMAGE_EXTENSIONS"] = {"png", "jpg", "jpeg", "gif"}
+
+db.init_app(app)
+Migrate(app, db)
+
+Talisman(app, content_security_policy=None)
+
+csrf = CSRFProtect()
+csrf.init_app(app)
+
+from extensions import limiter
+
+# Basic rate limiting to prevent spam on write endpoints
+limiter.init_app(app)
+
+login_manager.init_app(app)
+login_manager.login_view = "auth.login"
+app.limiter = limiter
+
+# Logging
+if not app.debug and not app.testing:
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    file_handler = RotatingFileHandler('logs/tastebook.log', maxBytes=10240, backupCount=10)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('TasteBook startup')
+
+# -------------------------
+# -------------------------
+# (Flask-WTF CSRF handled by CSRFProtect) - keep compatibility
+# -------------------------
+
+@app.context_processor
+def inject_globals():
+    return dict(current_user=current_user)
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        return User.query.get(int(user_id))
+    except Exception:
+        return None
+
+# Basic health endpoint for readiness/liveness checks
+@app.route('/_health')
+def health():
+    return jsonify({'status': 'ok'})
+
+# Register Blueprints
+app.register_blueprint(auth_bp, url_prefix='')
+app.register_blueprint(main_bp, url_prefix='')
+app.register_blueprint(posts_bp, url_prefix='')
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('errors/404.html'), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('errors/500.html'), 500
+
+# -------------------------
+# Home
+# -------------------------
+@app.route("/")
+def index():
+    page = int(request.args.get('page', 1))
+    per_page = 6
+    pagination = Post.query.order_by(Post.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    posts = pagination.items
+    return render_template("index.html", posts=posts, pagination=pagination)
+
+# -------------------------
+# Search
+# -------------------------
+@app.route("/search")
+def search():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return redirect(url_for("index"))
+
+    like = f"%{q}%"
+    results = Post.query.filter(
+        or_(
+            Post.title.ilike(like),
+            Post.body.ilike(like),
+        )
+    ).order_by(Post.created_at.desc()).all()
+
+    return render_template("search.html", posts=results, query=q)
+
+# -------------------------
+# Auth
+# -------------------------
+@app.route("/login")
+def login_redirect():
+    return redirect(url_for('auth.login'))
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("index"))
+
+# -------------------------
+# Private Profile
+# -------------------------
+@app.route("/profile")
+@login_required
+def profile():
+    user_posts = Post.query.filter_by(user_id=current_user.id) \
+        .order_by(Post.created_at.desc()).all()
+    return render_template("profile.html", user=current_user, posts=user_posts)
+
+@app.route("/signup")
+def signup_redirect():
+    return redirect(url_for('auth.register'))
+
+@app.route("/api/recipes/create", methods=["POST"])
+@login_required
+def create_recipe():
+    # Flask-WTF CSRF protects forms; API clients should send X-CSRF-Token.
+
+    title = request.form.get("title")
+    description = request.form.get("description")
+    instructions = request.form.get("instructions")
+    ingredients = request.form.get("ingredients", "[]")
+    category = request.form.get("category")
+    cooking_time = request.form.get("cooking_time")
+    servings = request.form.get("servings")
+
+    file = request.files.get("image")
+    filename = None
+
+    if file and file.filename:
+        ext = file.filename.rsplit('.', 1)[-1].lower()
+        if ext not in app.config.get("ALLOWED_IMAGE_EXTENSIONS", set()):
+            return jsonify({"error": "Invalid image format."}), 400
+
+        safe_name = secure_filename(file.filename)
+        prefix = secrets.token_hex(8)
+        filename = f"{prefix}-{safe_name}"
+        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+    recipe = Recipe(
+        title=title,
+        description=description,
+        instructions=instructions,
+        ingredients_json=ingredients,
+        image=filename,
+        category=category,
+        cooking_time=int(cooking_time) if cooking_time else None,
+        servings=int(servings) if servings else None,
+        user_id=current_user.id,
+        approved=False
+    )
+
+    db.session.add(recipe)
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+# -------------------------
+# RECIPE DETAIL
+# -------------------------
+@app.route("/recipe/<int:recipe_id>")
+def recipe_view(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+
+    # Protect unapproved recipes
+    if not recipe.approved:
+        if not current_user.is_authenticated or \
+           (not current_user.is_admin and recipe.user_id != current_user.id):
+            abort(404)
+
+    try:
+        ingredients = json.loads(recipe.ingredients_json or "[]")
+    except:
+        ingredients = []
+
+    avg = recipe.average_rating()
+
+    user_rating = None
+    if current_user.is_authenticated:
+        r = Rating.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
+        user_rating = r.score if r else None
+
+    comments = Comment.query.filter_by(
+        recipe_id=recipe_id, is_removed=False
+    ).order_by(Comment.created_at.asc()).all()
+
+    return render_template(
+        "recipe-detail.html",
+        recipe=recipe,
+        ingredients=ingredients,
+        avg_rating=avg,
+        user_rating=user_rating,
+        comments=comments
+    )
+
+# -------------------------
+# RATINGS + COMMENTS
+# -------------------------
+@app.route("/api/recipes/<int:recipe_id>/rate", methods=["POST"])
+@login_required
+@limiter.limit("30/hour;5/minute")
+def rate_recipe(recipe_id):
+    # CSRF is handled by Flask-WTF; Accept either cookie header or form token
+
+    score = int(request.form.get("score", 0))
+    if score < 1 or score > 5:
+        return jsonify({"error": "Invalid score"}), 400
+
+    recipe = Recipe.query.get_or_404(recipe_id)
+
+    existing = Rating.query.filter_by(
+        user_id=current_user.id, recipe_id=recipe_id
+    ).first()
+
+    if existing:
+        existing.score = score
+    else:
+        db.session.add(Rating(score=score, user_id=current_user.id, recipe_id=recipe_id))
+
+    db.session.commit()
+    return jsonify({"success": True, "avg": recipe.average_rating()})
+
+@app.route("/api/recipes/<int:recipe_id>/comment", methods=["POST"])
+@login_required
+@limiter.limit("30/hour;5/minute")
+def comment_recipe(recipe_id):
+    # CSRF is handled by Flask-WTF; Accept either cookie header or form token
+
+    body = request.form.get("body", "").strip()
+    if not body:
+        return jsonify({"error": "Empty comment"}), 400
+
+    c = Comment(body=body, user_id=current_user.id, recipe_id=recipe_id)
+    db.session.add(c)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "comment": {
+            "id": c.id,
+            "body": c.body,
+            "username": current_user.username,
+            "created_at": c.created_at.isoformat()
+        }
+    })
+
+# -------------------------
+# ADMIN
+# -------------------------
+@app.route("/admin")
+@login_required
+def admin_page():
+    if not current_user.is_admin:
+        abort(403)
+
+    pending = Recipe.query.filter_by(approved=False).all()
+    comments = Comment.query.filter_by(is_removed=False).limit(50).all()
+
+    return render_template("admin.html", pending=pending, comments=comments)
+
+
+@app.route("/api/recipes/<int:recipe_id>/approve", methods=["POST"])
+@login_required
+def api_approve_recipe(recipe_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Forbidden"}), 403
+
+    recipe = Recipe.query.get_or_404(recipe_id)
+    recipe.approved = True
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/recipes/<int:recipe_id>/reject", methods=["POST"])
+@login_required
+def api_reject_recipe(recipe_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Forbidden"}), 403
+
+    recipe = Recipe.query.get_or_404(recipe_id)
+    db.session.delete(recipe)
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/comments/<int:comment_id>/remove", methods=["POST"])
+@login_required
+def api_remove_comment(comment_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Forbidden"}), 403
+
+    c = Comment.query.get_or_404(comment_id)
+    c.is_removed = True
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/comments/<int:comment_id>/restore", methods=["POST"])
+@login_required
+def api_restore_comment(comment_id):
+    if not current_user.is_admin:
+        return jsonify({"error": "Forbidden"}), 403
+
+    c = Comment.query.get_or_404(comment_id)
+    c.is_removed = False
+    db.session.commit()
+    return jsonify({"success": True})
+
+if __name__ == "__main__":
+    # Backwards-compatible run for development
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
+)
+config.py(import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
+class BaseConfig:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///dev.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+    SESSION_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SECURE = os.environ.get('REMEMBER_COOKIE_SECURE', 'False').lower() == 'true'
+    MAX_CONTENT_LENGTH = 8 * 1024 * 1024
+
+
+class DevelopmentConfig(BaseConfig):
+    DEBUG = True
+
+
+class ProductionConfig(BaseConfig):
+    DEBUG = False
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+)
+models.py(# models.py
+from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+db = SQLAlchemy()
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(200), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    bio = db.Column(db.Text, default='')
+    is_admin = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    recipes = db.relationship('Recipe', backref='author', lazy=True)
+    ratings = db.relationship('Rating', backref='user', lazy=True)
+    comments = db.relationship('Comment', backref='user', lazy=True)
+    posts = db.relationship('Post', backref='user', lazy=True)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+class Recipe(db.Model):
+    __tablename__ = 'recipes'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    instructions = db.Column(db.Text)
+    ingredients_json = db.Column(db.Text)  # JSON string
+    image = db.Column(db.String(300), default='')
+    category = db.Column(db.String(100), default='')
+    cooking_time = db.Column(db.Integer, nullable=True)
+    servings = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    approved = db.Column(db.Boolean, default=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    ratings = db.relationship('Rating', backref='recipe', lazy=True, cascade='all, delete-orphan')
+    comments = db.relationship('Comment', backref='recipe', lazy=True, cascade='all, delete-orphan')
+
+    def average_rating(self):
+        if not self.ratings:
+            return None
+        total = sum(r.score for r in self.ratings)
+        return round(total / len(self.ratings), 2)
+
+
+post_tags = db.Table(
+    'post_tags',
+    db.Column('post_id', db.Integer, db.ForeignKey('posts.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tags.id'), primary_key=True)
+)
+
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    summary = db.Column(db.String(400), default='')
+    image = db.Column(db.String(300), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    comments = db.relationship('Comment', backref='post', lazy=True, cascade='all, delete-orphan')
+    tags = db.relationship('Tag', secondary=post_tags, backref=db.backref('posts', lazy='dynamic'))
+
+
+class Tag(db.Model):
+    __tablename__ = 'tags'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+
+
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+    id = db.Column(db.Integer, primary_key=True)
+    score = db.Column(db.Integer, nullable=False)  # 1-5
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    # support either recipe-based legacy items or new Post-based items
+    recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_removed = db.Column(db.Boolean, default=False)  # soft-delete flag
+)
+manage.py(import click
+from app import app
+from models import db, User
+
+@app.cli.command('create-admin')
+@click.argument('username')
+@click.argument('email')
+@click.argument('password')
+def create_admin(username, email, password):
+    """Create an admin user."""
+    with app.app_context():
+        if User.query.filter_by(username=username).first():
+            print('User already exists')
+            return
+        u = User(username=username, email=email, is_admin=True)
+        u.set_password(password)
+        db.session.add(u)
+        db.session.commit()
+        print('Admin user created.')
+)

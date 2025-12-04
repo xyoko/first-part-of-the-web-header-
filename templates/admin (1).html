@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - TasteBook</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="static/css/styles_admin.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='uploads/css/styles_admin.css') }}">
 </head>
 <body>
     <!-- Header -->
@@ -27,8 +30,8 @@
             </a>
 
             <nav class="nav">
-                <a href="index-static.html" class="nav-link">Home</a>
-                <a href="profile.html" class="nav-link">Profile</a>
+                <a href="/index-static" class="nav-link">Home</a>
+                <a href="/profile" class="nav-link">Profile</a>
             </nav>
         </div>
     </header>
@@ -220,24 +223,28 @@
             document.getElementById('recipes-list').style.display = 'flex';
         }, 1000);
 
+        async function approveRecipe(id){
+            if(!confirm('Approve?')) return;
+            const res = await fetch(`/api/recipes/${id}/approve`, { method:'POST' });
+            if (res.ok) location.reload();
+            else alert('Failed');
+        }
+        async function rejectRecipe(id){
+            if(!confirm('Reject?')) return;
+            const res = await fetch(`/api/recipes/${id}/reject`, { method:'POST' });
+            if (res.ok) location.reload();
+            else alert('Failed');
+        }
+        async function moderateComment(commentId, action) {
+            if (!confirm('Are you sure?')) return;
+            let url = `/api/comments/${commentId}/remove`;
+            if (action === 'restore') url = `/api/comments/${commentId}/restore`;
+            const res = await fetch(url, { method: 'POST' });
+            if (res.ok) location.reload();
+            else alert('Failed');
+        }
+</script>
 
-        function approveRecipe(id) {
-    fetch(`/recipes/${id}/approve`, { method: "POST" })
-        .then(res => res.json())
-        .then(data => {
-            alert("Recipe approved!");
-            location.reload();
-        });
-}
-
-function rejectRecipe(id) {
-    fetch(`/recipes/${id}/reject`, { method: "POST" })
-        .then(res => res.json())
-        .then(data => {
-            alert("Recipe rejected!");
-            location.reload();
-        });
-}
 
 
 

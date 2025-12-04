@@ -9,13 +9,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
-    <link href="static/css/styles_profile.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/styles_profile.css') }}" rel="stylesheet">
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <a href="/" class="logo">
+            <a href="{{ url_for('index') }}" class="logo">
                 <svg class="logo-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/>
                     <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/>
@@ -26,9 +26,9 @@
             </a>
 
             <nav class="nav">
-                <a href="index-static.html" class="nav-link">Home</a>
-                <a href="profile.html" class="nav-link">My Profile</a>
-                <button class="btn btn-outline" onclick="logout()">Logout</button>
+                <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('profile') }}" class="nav-link">My Profile</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a>
             </nav>
         </div>
     </header>
@@ -38,13 +38,13 @@
         <!-- Profile Header -->
         <div id="profile-view" class="profile-header">
             <div class="profile-info">
-                <div class="avatar">JD</div>
+                <div class="avatar">{{ user.username[:2].upper() }}</div>
                 <div class="profile-details">
-                    <h1 class="profile-name">John Doe</h1>
-                    <p class="profile-bio">Food enthusiast and home cook. Love sharing my favorite recipes!</p>
+                    <h1 class="profile-name">{{ user.username }}</h1>
+                    <p class="profile-bio">{{ user.bio or 'No bio yet. Tell us about yourself!' }}</p>
                     <div class="profile-actions">
                         <button class="btn btn-primary" onclick="toggleEditMode()">Edit Profile</button>
-                        <a href="/add-recipe.html" class="btn btn-outline">Add Recipe</a>
+                        <a href="{{ url_for('posts.create_post') }}" class="btn btn-outline">Add Recipe</a>
                     </div>
                 </div>
             </div>
@@ -53,15 +53,15 @@
         <!-- Edit Form (Hidden by default) -->
         <div id="profile-edit" class="edit-form" style="display: none;">
             <h2 style="margin-bottom: 1.5rem; font-family: var(--font-heading);">Edit Profile</h2>
-            <form id="edit-form">
+            <form id="edit-form" method="POST" action="{{ url_for('profile') }}">
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>
-                    <input class="form-input" type="text" id="username" value="John Doe">
+                    <input class="form-input" type="text" id="username" name="username" value="{{ user.username }}" required>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="bio">Bio</label>
-                    <textarea class="form-input" id="bio">Food enthusiast and home cook. Love sharing my favorite recipes!</textarea>
+                    <textarea class="form-input" id="bio" name="bio">{{ user.bio or '' }}</textarea>
                 </div>
 
                 <div class="form-actions">
@@ -80,50 +80,73 @@
         <!-- Approved Recipes -->
         <div id="approved-tab" class="tab-content active">
             <div class="recipes-grid">
-                <!-- Sample Recipe Card -->
-                <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1546069901-ba9599a7e63c')"></div>
-                    <div class="recipe-content">
-                        <h3 class="recipe-name">Classic Carbonara</h3>
-                        <p class="recipe-description">Creamy Italian pasta with crispy bacon, parmesan, and black pepper</p>
-                        <div class="recipe-meta">
-                            <span>⏱️ 25 min</span>
-                            <span>🍽️ 4 servings</span>
+                {% set approved_recipes = posts | selectattr('approved', 'equalto', True) | list %}
+                {% if approved_recipes %}
+                    {% for recipe in approved_recipes %}
+                    <div class="recipe-card">
+                        {% if recipe.image %}
+                        <div class="recipe-image" style="background-image: url('{{ url_for('static', filename='uploads/' ~ recipe.image) }}')"></div>
+                        {% else %}
+                        <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500')"></div>
+                        {% endif %}
+                        <div class="recipe-content">
+                            <h3 class="recipe-name">{{ recipe.title }}</h3>
+                            <p class="recipe-description">{{ recipe.description or (recipe.instructions[:80] ~ '...') if recipe.instructions else 'No description' }}</p>
+                            <div class="recipe-meta">
+                                {% if recipe.cooking_time %}<span>⏱️ {{ recipe.cooking_time }} min</span>{% endif %}
+                                {% if recipe.servings %}<span>🍽️ {{ recipe.servings }} servings</span>{% endif %}
+                            </div>
+                            <div class="recipe-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                                <a href="{{ url_for('posts.view_post', id=recipe.id) }}" class="btn btn-outline" style="flex: 1; padding: 0.5rem;">View</a>
+                                <a href="{{ url_for('posts.edit_post', id=recipe.id) }}" class="btn btn-outline" style="flex: 1; padding: 0.5rem;">Edit</a>
+                                <form action="{{ url_for('posts.delete_post', id=recipe.id) }}" method="POST" style="flex: 1;">
+                                    <button type="submit" class="btn btn-outline" onclick="return confirm('Delete this recipe?');" style="width: 100%; padding: 0.5rem;">Delete</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe')"></div>
-                    <div class="recipe-content">
-                        <h3 class="recipe-name">Greek Salad</h3>
-                        <p class="recipe-description">Fresh Mediterranean salad with feta cheese, olives, and olive oil</p>
-                        <div class="recipe-meta">
-                            <span>⏱️ 15 min</span>
-                            <span>🍽️ 2 servings</span>
-                        </div>
-                    </div>
-                </div>
+                    {% endfor %}
+                {% else %}
+                <p style="grid-column: 1/-1; text-align: center; color: #999;">No approved recipes yet. <a href="{{ url_for('posts.create_post') }}">Create one!</a></p>
+                {% endif %}
             </div>
         </div>
 
         <!-- Pending Recipes -->
         <div id="pending-tab" class="tab-content">
             <div class="recipes-grid">
-                <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445')"></div>
-                    <div class="recipe-content">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <h3 class="recipe-name">Blueberry Pancakes</h3>
-                            <span class="badge badge-pending">Pending</span>
-                        </div>
-                        <p class="recipe-description">Fluffy pancakes loaded with fresh blueberries</p>
-                        <div class="recipe-meta">
-                            <span>⏱️ 20 min</span>
-                            <span>🍽️ 4 servings</span>
+                {% set pending_recipes = posts | selectattr('approved', 'equalto', False) | list %}
+                {% if pending_recipes %}
+                    {% for recipe in pending_recipes %}
+                    <div class="recipe-card">
+                        {% if recipe.image %}
+                        <div class="recipe-image" style="background-image: url('{{ url_for('static', filename='uploads/' ~ recipe.image) }}')"></div>
+                        {% else %}
+                        <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500')"></div>
+                        {% endif %}
+                        <div class="recipe-content">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <h3 class="recipe-name">{{ recipe.title }}</h3>
+                                <span class="badge badge-pending">Pending</span>
+                            </div>
+                            <p class="recipe-description">{{ recipe.description or (recipe.instructions[:80] ~ '...') if recipe.instructions else 'No description' }}</p>
+                            <div class="recipe-meta">
+                                {% if recipe.cooking_time %}<span>⏱️ {{ recipe.cooking_time }} min</span>{% endif %}
+                                {% if recipe.servings %}<span>🍽️ {{ recipe.servings }} servings</span>{% endif %}
+                            </div>
+                            <div class="recipe-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                                <a href="{{ url_for('posts.view_post', id=recipe.id) }}" class="btn btn-outline" style="flex: 1; padding: 0.5rem;">View</a>
+                                <a href="{{ url_for('posts.edit_post', id=recipe.id) }}" class="btn btn-outline" style="flex: 1; padding: 0.5rem;">Edit</a>
+                                <form action="{{ url_for('posts.delete_post', id=recipe.id) }}" method="POST" style="flex: 1;">
+                                    <button type="submit" class="btn btn-outline" onclick="return confirm('Delete this recipe?');" style="width: 100%; padding: 0.5rem;">Delete</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
+                    {% endfor %}
+                {% else %}
+                <p style="grid-column: 1/-1; text-align: center; color: #999;">No pending recipes. All your recipes are approved!</p>
+                {% endif %}
             </div>
         </div>
     </main>
@@ -152,18 +175,14 @@
             }
         }
 
-        function logout() {
-            // Implement logout logic
-            window.location.href = '/login.html';
-        }
-
         document.getElementById('edit-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            // Add your update profile API call here
+            // The form will POST to the server, which handles the update
             const username = document.getElementById('username').value;
             const bio = document.getElementById('bio').value;
             console.log('Update profile:', { username, bio });
-            toggleEditMode();
+            // Allow the form to submit
+            e.target.submit();
         });
     </script>
 </body>

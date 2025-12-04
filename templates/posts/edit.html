@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Edit Post - TasteBook{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Edit Recipe</h2>
+  <form method="post" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">{{ form.title.label(class_='form-label') }}{{ form.title(class_='form-control') }}</div>
+    <div class="mb-3">{{ form.description.label(class_='form-label') }}{{ form.description(class_='form-control', rows=3) }}</div>
+    <div class="mb-3">{{ form.instructions.label(class_='form-label') }}{{ form.instructions(class_='form-control', rows=5) }}</div>
+    <div class="mb-3">{{ form.ingredients.label(class_='form-label') }}{{ form.ingredients(class_='form-control', rows=3) }}</div>
+    <div class="mb-3">{{ form.category.label(class_='form-label') }}{{ form.category(class_='form-control') }}</div>
+    <div class="row">
+      <div class="col-md-6 mb-3">{{ form.cooking_time.label(class_='form-label') }}{{ form.cooking_time(class_='form-control') }}</div>
+      <div class="col-md-6 mb-3">{{ form.servings.label(class_='form-label') }}{{ form.servings(class_='form-control') }}</div>
+    </div>
+    <div class="mb-3">{{ form.image.label(class_='form-label') }}{{ form.image(class_='form-control') }}</div>
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+  </form>
+</div>
+{% endblock %}

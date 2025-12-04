@@ -1,0 +1,8 @@
+/* Basic style overrides and responsive helpers */
+:root { --bs-body-font-family: 'Inter', 'Quicksand', sans-serif; }
+body { font-family: var(--bs-body-font-family); }
+.hero { background: linear-gradient(90deg, rgba(13,110,253,0.08), rgba(13,110,253,0.02)); }
+.card-img-top { max-height: 200px; object-fit: cover; }
+@media (max-width: 768px) {
+  .hero .p-5 { padding: 2rem; }
+}

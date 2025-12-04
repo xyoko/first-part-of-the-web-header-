@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TasteBook - Discover & Share Recipes</title>
     <meta name="description" content="Discover and share delicious recipes from around the world. Join our community of food lovers and find your next favorite dish.">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
     
     <!-- Styles -->
-    <link rel="stylesheet" href="static/css/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='uploads/css/styles.css') }}">
 </head>
 <body>
     <!-- Fixed Header -->
@@ -43,8 +43,8 @@
                 <a href="#" class="nav-link">Home</a>
                 <a href="#categories" class="nav-link">Categories</a>
                 <a href="#" class="nav-link">My Recipes</a>
-                <a href="login.html" class="btn btn-outline">Login</a>
-                <a href="login.html" class="btn btn-primary">Sign Up</a>
+                <a href="/login" class="btn btn-outline">Login</a>
+                <a href="/login" class="btn btn-primary">Sign Up</a>
             </nav>
 
             <!-- Mobile Menu Button -->
@@ -73,31 +73,31 @@
             <h2 class="section-title">Browse by Category</h2>
             <div class="categories-grid">
                 <a href="#" class="category-card">
-                    <div class="category-image" style="background-image: url('C:/Users/User/Python.3/projects/NEW/.vscode/webapp/breakfast.jpg')"></div>
+                    <div class="category-image" style="background-image: url('../static/uploads/images/breakfast.jpg')"></div>
                     <div class="category-overlay">
                         <h3 class="category-name">Breakfast</h3>
                     </div>
                 </a>
                 <a href="#" class="category-card">
-                    <div class="category-image" style="background-image: url('C:/Users/User/Python.3/projects/NEW/.vscode/webapp/lunch.jpg')"></div>
+                    <div class="category-image" style="background-image: url('../static/uploads/images/lunch.jpg')"></div>
                     <div class="category-overlay">
                         <h3 class="category-name">Lunch</h3>
                     </div>
                 </a>
                 <a href="#" class="category-card">
-                    <div class="category-image" style="background-image: url('C:/Users/User/Python.3/projects/NEW/.vscode/webapp/dinner.jpg')"></div>
+                    <div class="category-image" style="background-image: url('../static/uploads/images/dinner.jpg')"></div>
                     <div class="category-overlay">
                         <h3 class="category-name">Dinner</h3>
                     </div>
                 </a>
                 <a href="#" class="category-card">
-                    <div class="category-image" style="background-image: url('C:/Users/User/Python.3/projects/NEW/.vscode/webapp/deserts.jpg')"></div>
+                    <div class="category-image" style="background-image: url('../static/uploads/images/deserts.jpg')"></div>
                     <div class="category-overlay">
                         <h3 class="category-name">Desserts</h3>
                     </div>
                 </a>
                 <a href="#" class="category-card">
-                    <div class="category-image" style="background-image: url('C:/Users/User/Python.3/projects/NEW/.vscode/webapp/vegan.jpg')"></div>
+                    <div class="category-image" style="background-image: url('../static/uploads/images/vegan.jpg')"></div>
                     <div class="category-overlay">
                         <h3 class="category-name">Vegan</h3>
                     </div>
@@ -113,7 +113,7 @@
             <div class="recipes-grid">
                 <!-- Recipe Card 1 and the followings are repeated-->
                 <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('../src/assets/recipe-carbonara.jpg')"></div>
+                    <div class="recipe-image" style="background-image: url('../static/uploads/images/recipe-carbonara.jpg')"></div>
                     <div class="recipe-content">
                         <h3 class="recipe-name">Classic Carbonara</h3>
                         <p class="recipe-description">Creamy Italian pasta with crispy bacon, parmesan, and black pepper</p>
@@ -135,13 +135,13 @@
                         </div>
                     </div>
                     <div class="recipe-footer">
-                        <a href="recipe-detail.html" class="btn btn-secondary btn-full">View Recipe</a>
+                        <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
                     </div>
                 </div>
 
                 <!-- Recipe Card 2 -->
                 <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('../src/assets/recipe-greek-salad.jpg')"></div>
+                    <div class="recipe-image" style="background-image: url('../static/uploads/images/recipe-greek-salad.jpg')"></div>
                     <div class="recipe-content">
                         <h3 class="recipe-name">Greek Salad</h3>
                         <p class="recipe-description">Fresh Mediterranean salad with feta cheese, olives, and olive oil</p>
@@ -163,13 +163,13 @@
                         </div>
                     </div>
                     <div class="recipe-footer">
-                        <a href="recipe-detail.html" class="btn btn-secondary btn-full">View Recipe</a>
+                        <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
                     </div>
                 </div>
 
                 <!-- Recipe Card 3 -->
                 <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('../src/assets/recipe-pancakes.jpg')"></div>
+                    <div class="recipe-image" style="background-image: url('../static/uploads/images/recipe-pancakes.jpg')"></div>
                     <div class="recipe-content">
                         <h3 class="recipe-name">Blueberry Pancakes</h3>
                         <p class="recipe-description">Fluffy pancakes loaded with fresh blueberries and maple syrup</p>
@@ -191,13 +191,13 @@
                         </div>
                     </div>
                     <div class="recipe-footer">
-                        <a href="recipe-detail.html" class="btn btn-secondary btn-full">View Recipe</a>
+                        <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
                     </div>
                 </div>
 
                 <!-- Recipe Card 4 -->
                 <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('../src/assets/recipe-fish-tacos.jpg')"></div>
+                    <div class="recipe-image" style="background-image: url('../static/uploads/images/recipe-fish-tacos.jpg')"></div>
                     <div class="recipe-content">
                         <h3 class="recipe-name">Fish Tacos</h3>
                         <p class="recipe-description">Crispy fish tacos with cabbage slaw and chipotle sauce</p>
@@ -219,13 +219,13 @@
                         </div>
                     </div>
                     <div class="recipe-footer">
-                        <a href="recipe-detail.html" class="btn btn-secondary btn-full">View Recipe</a>
+                        <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
                     </div>
                 </div>
 
                 <!-- Recipe Card 5 -->
                 <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('../src/assets/recipe-cookies.jpg')"></div>
+                    <div class="recipe-image" style="background-image: url('../static/uploads/images/recipe-cookies.jpg')"></div>
                     <div class="recipe-content">
                         <h3 class="recipe-name">Chocolate Chip Cookies</h3>
                         <p class="recipe-description">Classic cookies with gooey chocolate chips, fresh from the oven</p>
@@ -247,13 +247,13 @@
                         </div>
                     </div>
                     <div class="recipe-footer">
-                        <a href="recipe-detail.html" class="btn btn-secondary btn-full">View Recipe</a>
+                        <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
                     </div>
                 </div>
 
                 <!-- Recipe Card 6 -->
                 <div class="recipe-card">
-                    <div class="recipe-image" style="background-image: url('../src/assets/recipe-green-curry.jpg')"></div>
+                    <div class="recipe-image" style="background-image: url('../static/uploads/images/recipe-green-curry.jpg')"></div>
                     <div class="recipe-content">
                         <h3 class="recipe-name">Thai Green Curry</h3>
                         <p class="recipe-description">Aromatic Thai curry with chicken, vegetables, and coconut milk</p>
@@ -275,7 +275,7 @@
                         </div>
                     </div>
                     <div class="recipe-footer">
-                        <a href="recipe-detail.html" class="btn btn-secondary btn-full">View Recipe</a>
+                        <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
                     </div>
                 </div>
             </div>
@@ -330,6 +330,6 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="{{ url_for('static', filename='uploads/script.js') }}"></script>
 </body>
 </html>

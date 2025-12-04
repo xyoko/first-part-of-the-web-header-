@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ post.title }} - TasteBook{% endblock %}
+
+{% block content %}
+<article class="mb-4">
+  <h1>{{ post.title }}</h1>
+  <p class="text-muted">By {{ post.author.username }} | {{ post.created_at.strftime('%Y-%m-%d') }}</p>
+  {% if post.image %}
+  <img src="{{ url_for('static', filename='uploads/' ~ post.image) }}" class="img-fluid mb-3" alt="{{ post.title }}">
+  {% endif %}
+  <div class="mb-3">{% if post.description %}<p>{{ post.description }}</p>{% endif %}</div>
+  <div class="mb-3">{% if post.instructions %}<h4>Instructions</h4><div>{{ post.instructions }}</div>{% endif %}</div>
+</article>
+
+<section>
+  <h4>Comments</h4>
+  {% for c in post.comments %}
+    <div class="mb-2">
+      <strong>{{ c.user.username }}</strong> <small class="text-muted">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+      <p>{{ c.body }}</p>
+    </div>
+  {% else %}
+  <p>No comments yet.</p>
+  {% endfor %}
+</section>
+
+{% endblock %}

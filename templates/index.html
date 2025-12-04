@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TasteBook - Discover & Share Recipes</title>
+    <meta name="description" content="Discover and share delicious recipes from around the world. Join our community of food lovers and find your next favorite dish.">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='uploads/css/styles.css') }}">
+</head>
+<body>
+    <!-- Fixed Header -->
+    <header class="header">
+        <div class="container header-content">
+            <!-- Logo -->
+            <a href="#" class="logo">
+                <svg class="logo-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/>
+                    <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/>
+                    <path d="m2.1 21.8 6.4-6.3"/>
+                    <path d="m19 5-7 7"/>
+                </svg>
+                <span class="logo-text">TasteBook</span>
+            </a>
+
+            <!-- Search Bar -->
+            <div class="search-wrapper">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.3-4.3"/>
+                </svg>
+                <input type="search" class="search-input" placeholder="Search recipes...">
+            </div>
+
+            <!-- Navigation -->
+            <nav class="nav">
+                <a href="#" class="nav-link">Home</a>
+                <a href="#categories" class="nav-link">Categories</a>
+                <a href="#" class="nav-link">My Recipes</a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Sign Up</a>
+                
+
+            </nav>
+
+            <!-- Mobile Menu Button -->
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Discover & Share Recipes You'll Love</h1>
+            <button class="btn btn-hero">Explore Recipes</button>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section id="categories" class="section">
+        <div class="container">
+            <h2 class="section-title">Browse by Category</h2>
+            <div class="categories-grid">
+                <a href="#" class="category-card">
+                    <div class="category-image" style="background-image: url('../static/uploads/images/breakfast.jpg')"></div>
+                    <div class="category-overlay">
+                        <h3 class="category-name">Breakfast</h3>
+                    </div>
+                </a>
+                <a href="#" class="category-card">
+                    <div class="category-image" style="background-image: url('../static/uploads/images/lunch.jpg')"></div>
+                    <div class="category-overlay">
+                        <h3 class="category-name">Lunch</h3>
+                    </div>
+                </a>
+                <a href="#" class="category-card">
+                    <div class="category-image" style="background-image: url('../static/uploads/images/dinner.jpg')"></div>
+                    <div class="category-overlay">
+                        <h3 class="category-name">Dinner</h3>
+                    </div>
+                </a>
+                <a href="#" class="category-card">
+                    <div class="category-image" style="background-image: url('../static/uploads/images/deserts.jpg')"></div>
+                    <div class="category-overlay">
+                        <h3 class="category-name">Desserts</h3>
+                    </div>
+                </a>
+                <a href="#" class="category-card">
+                    <div class="category-image" style="background-image: url('../static/uploads/images/vegan.jpg')"></div>
+                    <div class="category-overlay">
+                        <h3 class="category-name">Vegan</h3>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Popular Recipes Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Latest Posts</h2>
+            <div class="recipes-grid">
+                {% for post in posts %}
+                <div class="recipe-card">
+                    {% if post.image %}
+                    <div class="recipe-image" style="background-image: url('{{ url_for('static', filename='uploads/' ~ post.image) }}')"></div>
+                    {% else %}
+                    <div class="recipe-image" style="background-image: url('{{ url_for('static', filename='uploads/images/placeholder.jpg') }}')"></div>
+                    {% endif %}
+                    <div class="recipe-content">
+                        <h3 class="recipe-name">{{ post.title }}</h3>
+                        <p class="recipe-description">{{ post.description or (post.instructions[:150] ~ '...') }}</p>
+                        <div class="recipe-meta">
+                            <div class="cook-time">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                                <span>By {{ post.author.username }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="recipe-footer">
+                        <a href="{{ url_for('posts.view_post', id=post.id) }}" class="btn btn-secondary btn-full">View Recipe</a>
+                        {% if current_user.is_authenticated and current_user.id == post.user_id %}
+                        <a href="{{ url_for('posts.edit_post', id=post.id) }}" class="btn btn-secondary btn-full">Edit</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <p>No posts yet. <a href="{{ url_for('posts.create_post') }}">Create the first one!</a></p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">Previous</a></li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+                    <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</span></li>
+                    {% if pagination.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">Next</a></li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h4 class="footer-title">About Us</h4>
+                    <p class="footer-text">
+                        TasteBook is your home for discovering and sharing delicious recipes from around the world. 
+                        Join our community of food lovers today!
+                    </p>
+                </div>
+                <div class="footer-column">
+                    <h4 class="footer-title">Contact</h4>
+                    <div class="footer-text">
+                        <p>Email: hello@tastebook.com</p>
+                        <p>Phone: (555) 123-4567</p>
+                        <p>Location: San Francisco, CA</p>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4 class="footer-title">Follow Us</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="none" stroke="#fff"/>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="#fff"/>
+                            </svg>
+                        </a>
+                        <a href="#" class="social-link">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 TasteBook. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='uploads/script.js') }}"></script>
+</body>
+</html>
