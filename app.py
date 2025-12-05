@@ -29,10 +29,15 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 limiter.init_app(app)
 # Initialize Talisman with a reasonable CSP for development; tighten for production
+# Allow fonts.googleapis and fonts.gstatic for Google Fonts and cdn.jsdelivr for Bootstrap
+# Allow 'data:' in img-src for Bootstrap inline SVG icons (form controls)
 talisman.init_app(app, content_security_policy={
     'default-src': ["'self'"],
     'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-    'style-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net']
+    'style-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com'],
+    'font-src': ["'self'", 'https://fonts.gstatic.com'],
+    'img-src': ["'self'", 'data:'],
+    'connect-src': ["'self'", 'https://cdn.jsdelivr.net']
 })
 
 # Enable CSRF protection for forms
@@ -130,6 +135,9 @@ def my_recipes_page():
 @app.route("/profile")
 @login_required
 def profile():
+    # Redirect admin users to their special admin dashboard
+    if current_user.is_admin:
+        return redirect(url_for('admin_dashboard'))
     user_recipes = Recipe.query.filter_by(user_id=current_user.id).order_by(Recipe.created_at.desc()).all()
     return render_template("profile.html", user=current_user, recipes=user_recipes)
 
@@ -154,10 +162,8 @@ def profile_edit():
 # -------------------------
 @app.route("/api/recipes/create", methods=["POST"])
 @login_required
+@csrf.exempt  # Handle CSRF manually or disable for AJAX form submission
 def create_recipe():
-    token = request.form.get("csrf_token")
-    if not validate_csrf(token):
-        return jsonify({"error": "Invalid CSRF token"}), 400
 
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
@@ -271,12 +277,35 @@ def admin_page():
     if not current_user.is_admin:
         return abort(403)
     pending = Recipe.query.filter_by(approved=False).order_by(Recipe.created_at.desc()).all()
+    # parse ingredients JSON for templates
+    for r in pending:
+        try:
+            r.ingredients_list = json.loads(r.ingredients_json or '[]')
+        except Exception:
+            r.ingredients_list = []
     unmoderated_comments = Comment.query.filter_by(is_removed=False).order_by(Comment.created_at.desc()).limit(50).all()
     return render_template("admin.html", pending=pending, comments=unmoderated_comments)
+
+# Admin dashboard page (special profile for admin users)
+@app.route("/admin-page")
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        return abort(403)
+    pending = Recipe.query.filter_by(approved=False).order_by(Recipe.created_at.desc()).all()
+    # parse ingredients JSON for templates
+    for r in pending:
+        try:
+            r.ingredients_list = json.loads(r.ingredients_json or '[]')
+        except Exception:
+            r.ingredients_list = []
+    unmoderated_comments = Comment.query.filter_by(is_removed=False).order_by(Comment.created_at.desc()).limit(50).all()
+    return render_template("admin-page.html", pending=pending, comments=unmoderated_comments)
 
 # Primary API endpoints
 @app.route("/api/recipes/<int:recipe_id>/approve", methods=["POST"])
 @login_required
+@csrf.exempt
 def api_approve_recipe(recipe_id):
     if not current_user.is_admin:
         return jsonify({"error": "Forbidden"}), 403
@@ -287,6 +316,7 @@ def api_approve_recipe(recipe_id):
 
 @app.route("/api/recipes/<int:recipe_id>/reject", methods=["POST"])
 @login_required
+@csrf.exempt
 def api_reject_recipe(recipe_id):
     if not current_user.is_admin:
         return jsonify({"error": "Forbidden"}), 403

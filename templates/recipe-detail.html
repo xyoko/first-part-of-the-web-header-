@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classic Carbonara - TasteBook</title>        
-    <meta name="description" content="Authentic Italian carbonara recipe with silky sauce, crispy pancetta and perfectly cooked pasta.">
+    <title>{{ recipe.title }} - TasteBook</title>        
+    <meta name="description" content="{{ recipe.description or recipe.title }}">
     <meta name="csrf-token" content="{{ csrf_token }}">
     
     <!-- Fonts -->
@@ -17,10 +17,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='uploads/css/styles.css') }}">
 </head>
 <body>
-    <!-- Fixed Header -->
+    <!-- Fixed Header -->2
     <header class="header">
         <div class="container header-content">
-            <a href="/index-static" class="logo">
+            <a href="{{ url_for('index') }}" class="logo">
                 <svg class="logo-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/>
                     <path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/>
@@ -39,11 +39,19 @@
             </div>
 
             <nav class="nav">
-                <a href="/index-static" class="nav-link">Home</a>
-                <a href="index-static.html#categories" class="nav-link">Categories</a>
+                <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('index') }}#categories" class="nav-link">Categories</a>
                 <a href="#" class="nav-link">My Recipes</a>
-                <button class="btn btn-outline">Login</button>
-                <button class="btn btn-primary">Sign Up</button>
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">Admin Dashboard</a>
+                    {% else %}
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline">Profile</a>
+                    {% endif %}
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Sign Up</a>
+                {% endif %}
             </nav>
 
             <button class="mobile-menu-btn" id="mobileMenuBtn">
@@ -59,29 +67,35 @@
     <!-- Recipe Detail -->
     <main class="recipe-detail-page">
         <div class="container recipe-detail-container">
-            <img src="../static/uploads/images/Pasta_Carbonara.jpg" alt="Classic Carbonara" class="recipe-detail-image">
+            {% if recipe.image %}
+            <img src="{{ url_for('static', filename='uploads/' ~ recipe.image) }}" alt="{{ recipe.title }}" class="recipe-detail-image">
+            {% else %}
+            <img src="{{ url_for('static', filename='uploads/images/placeholder.jpg') }}" alt="{{ recipe.title }}" class="recipe-detail-image">
+            {% endif %}
             
-            <h1 class="recipe-detail-title">Classic Carbonara</h1>
+            <h1 class="recipe-detail-title">{{ recipe.title }}</h1>
             
             <div class="recipe-detail-meta">
                 <div class="rating-large">
-                    <span class="star filled">★</span>
-                    <span class="star filled">★</span>
-                    <span class="star filled">★</span>
-                    <span class="star filled">★</span>
-                    <span class="star filled">★</span>
-                    <span class="rating-text">5.0 (234 reviews)</span>
+                    {% set rating = avg_rating or 0 %}
+                    {% for i in range(5) %}
+                    <span class="star {% if i < rating %}filled{% endif %}">★</span>
+                    {% endfor %}
+                    <span class="rating-text">{{ "%.1f"|format(rating) }} ({{ recipe.ratings | length }} reviews)</span>
                 </div>
             </div>
 
             <div class="recipe-stats">
+                {% if recipe.cooking_time %}
                 <div class="stat-item">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <polyline points="12 6 12 12 16 14"/>
                     </svg>
-                    <span>25 minutes</span>
+                    <span>{{ recipe.cooking_time }} minutes</span>
                 </div>
+                {% endif %}
+                {% if recipe.servings %}
                 <div class="stat-item">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -89,22 +103,13 @@
                         <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
-                    <span>4 servings</span>
+                    <span>{{ recipe.servings }} servings</span>
                 </div>
-                <div class="stat-item">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 13.87A4 4 0 0 1 7.8 6.5a4.73 4.73 0 0 1 1.2-1.5l.9-.9a3.4 3.4 0 0 1 4.8 0l.9.9a4.73 4.73 0 0 1 1.2 1.5 4 4 0 0 1 1.8 7.37"/>
-                        <path d="M9 20h6"/>
-                        <path d="M12 16v4"/>
-                    </svg>
-                    <span>Medium difficulty</span>
-                </div>
+                {% endif %}
             </div>
 
             <p class="recipe-description-full">
-                This authentic Italian carbonara recipe features a silky, creamy sauce made from eggs and cheese, 
-                tossed with crispy pancetta and perfectly cooked pasta. No cream needed—just simple, quality ingredients 
-                and proper technique for restaurant-quality results at home.
+                {{ recipe.description or recipe.instructions[:200] }}
             </p>
 
             <div class="recipe-actions">
@@ -121,38 +126,12 @@
                     <div>
                         <h2 class="content-section-title">Ingredients</h2>
                         <div class="ingredients-card">
+                            {% for ingredient in ingredients %}
                             <div class="ingredient-item">
-                                <input type="checkbox" id="ing1" class="ingredient-checkbox">
-                                <label for="ing1" class="ingredient-label">400g spaghetti</label>
+                                <input type="checkbox" id="ing{{ loop.index }}" class="ingredient-checkbox">
+                                <label for="ing{{ loop.index }}" class="ingredient-label">{{ ingredient }}</label>
                             </div>
-                            <div class="ingredient-item">
-                                <input type="checkbox" id="ing2" class="ingredient-checkbox">
-                                <label for="ing2" class="ingredient-label">200g pancetta or bacon, diced</label>
-                            </div>
-                            <div class="ingredient-item">
-                                <input type="checkbox" id="ing3" class="ingredient-checkbox">
-                                <label for="ing3" class="ingredient-label">4 large eggs</label>
-                            </div>
-                            <div class="ingredient-item">
-                                <input type="checkbox" id="ing4" class="ingredient-checkbox">
-                                <label for="ing4" class="ingredient-label">100g Parmesan cheese, grated</label>
-                            </div>
-                            <div class="ingredient-item">
-                                <input type="checkbox" id="ing5" class="ingredient-checkbox">
-                                <label for="ing5" class="ingredient-label">2 cloves garlic, minced</label>
-                            </div>
-                            <div class="ingredient-item">
-                                <input type="checkbox" id="ing6" class="ingredient-checkbox">
-                                <label for="ing6" class="ingredient-label">Freshly ground black pepper</label>
-                            </div>
-                            <div class="ingredient-item">
-                                <input type="checkbox" id="ing7" class="ingredient-checkbox">
-                                <label for="ing7" class="ingredient-label">Salt to taste</label>
-                            </div>
-                            <div class="ingredient-item">
-                                <input type="checkbox" id="ing8" class="ingredient-checkbox">
-                                <label for="ing8" class="ingredient-label">Fresh parsley for garnish</label>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
 
@@ -160,38 +139,14 @@
                     <div>
                         <h2 class="content-section-title">Instructions</h2>
                         <div class="instructions-card">
+                            {% for instruction in recipe.instructions.split('\n') %}
+                            {% if instruction.strip() %}
                             <div class="instruction-step">
-                                <div class="step-number">1</div>
-                                <p class="step-text">Bring a large pot of salted water to a boil. Cook spaghetti according to package directions until al dente.</p>
+                                <div class="step-number">{{ loop.index }}</div>
+                                <p class="step-text">{{ instruction.strip() }}</p>
                             </div>
-                            <div class="instruction-step">
-                                <div class="step-number">2</div>
-                                <p class="step-text">While pasta cooks, heat a large skillet over medium heat. Add diced pancetta and cook until crispy, about 5-7 minutes.</p>
-                            </div>
-                            <div class="instruction-step">
-                                <div class="step-number">3</div>
-                                <p class="step-text">In a bowl, whisk together eggs, grated Parmesan, and a generous amount of black pepper.</p>
-                            </div>
-                            <div class="instruction-step">
-                                <div class="step-number">4</div>
-                                <p class="step-text">When pasta is done, reserve 1 cup of pasta water, then drain the spaghetti.</p>
-                            </div>
-                            <div class="instruction-step">
-                                <div class="step-number">5</div>
-                                <p class="step-text">Remove the skillet from heat. Add the hot pasta to the pancetta and toss to combine.</p>
-                            </div>
-                            <div class="instruction-step">
-                                <div class="step-number">6</div>
-                                <p class="step-text">Quickly pour the egg mixture over the pasta, tossing constantly. The residual heat will cook the eggs into a creamy sauce.</p>
-                            </div>
-                            <div class="instruction-step">
-                                <div class="step-number">7</div>
-                                <p class="step-text">If the sauce is too thick, add reserved pasta water a little at a time until you reach desired consistency.</p>
-                            </div>
-                            <div class="instruction-step">
-                                <div class="step-number">8</div>
-                                <p class="step-text">Serve immediately, garnished with extra Parmesan, black pepper, and fresh parsley.</p>
-                            </div>
+                            {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                 </div>

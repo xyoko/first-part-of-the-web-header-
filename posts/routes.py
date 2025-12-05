@@ -55,7 +55,14 @@ def create():
         db.session.add(recipe)
         db.session.commit()
         flash('Recipe created, pending approval', 'success')
+        # If request originated from AJAX (our create page uses fetch), return JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'redirect': url_for('profile')})
         return redirect(url_for('posts.create'))
+    # If the form wasn't valid and this was an AJAX POST, return errors
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'error': 'Validation failed', 'errors': form.errors}), 400
+
     return render_template('posts/create.html', form=form)
 
 
@@ -78,12 +85,15 @@ def edit(id):
 
         if form.image.data:
             file = form.image.data
-            if file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                upload_folder = current_app.config.get('UPLOAD_FOLDER', 'static/uploads')
-                os.makedirs(upload_folder, exist_ok=True)
-                file.save(os.path.join(upload_folder, filename))
-                recipe.image = filename
+            # If a new file was uploaded, `file` will be a FileStorage with a `filename` attribute.
+            # In some cases (prefilled form), `form.image.data` may be a string filename — handle gracefully.
+            if hasattr(file, 'filename') and file.filename:
+                if allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'static/uploads')
+                    os.makedirs(upload_folder, exist_ok=True)
+                    file.save(os.path.join(upload_folder, filename))
+                    recipe.image = filename
 
         recipe.category = form.category.data or ''
         recipe.cooking_time = form.cooking_time.data

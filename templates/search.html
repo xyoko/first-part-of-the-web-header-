@@ -13,7 +13,7 @@
       <div class="card-body">
         <h5 class="card-title">{{ post.title }}</h5>
         <p class="card-text">{{ post.summary or post.body[:150] ~ '...' }}</p>
-        <a href="{{ url_for('posts.view_post', id=post.id) }}" class="btn btn-primary">View Post</a>
+        <a href="{{ url_for('recipe_view', recipe_id=post.id) }}" class="btn btn-primary">View Post</a>
       </div>
     </div>
   </div>

@@ -46,8 +46,16 @@
                 <a href="#" class="nav-link">Home</a>
                 <a href="#categories" class="nav-link">Categories</a>
                 <a href="#" class="nav-link">My Recipes</a>
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline">Admin Dashboard</a>
+                    {% else %}
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline">Profile</a>
+                    {% endif %}
+                {% else %}
                 <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Login</a>
                 <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Sign Up</a>
+                {% endif %}
                 
 
             </nav>
@@ -137,7 +145,7 @@
                         </div>
                     </div>
                     <div class="recipe-footer">
-                        <a href="{{ url_for('posts.view_post', id=post.id) }}" class="btn btn-secondary btn-full">View Recipe</a>
+                        <a href="{{ url_for('recipe_view', recipe_id=post.id) }}" class="btn btn-secondary btn-full">View Recipe</a>
                         {% if current_user.is_authenticated and current_user.id == post.user_id %}
                         <a href="{{ url_for('posts.edit_post', id=post.id) }}" class="btn btn-secondary btn-full">Edit</a>
                         {% endif %}

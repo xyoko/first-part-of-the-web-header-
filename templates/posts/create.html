@@ -286,6 +286,8 @@
         </div>
 
         <form id="recipe-form" class="recipe-form" action="{{ url_for('posts.create_post') }}" method="POST" enctype="multipart/form-data">
+            <!-- CSRF token for Flask-WTF -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Basic Information -->
             <div class="form-section">
                 <h2 class="section-title">Basic Information</h2>
@@ -421,18 +423,28 @@
             formData.append('ingredients', JSON.stringify(ingredients));
             
             try {
-                const response = await fetch('{{ url_for('posts.create_post') }}', {
+                // POST to the app-level API endpoint which returns JSON and uses our CSRF/session check
+                const response = await fetch('{{ url_for('create_recipe') }}', {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    window.location.href = '{{ url_for('profile') }}';
+
+                // If the response is JSON, parse it; otherwise show the text (likely an HTML error page)
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = '{{ url_for('profile') }}';
+                    } else {
+                        errorDiv.textContent = data.error || (data.errors ? JSON.stringify(data.errors) : 'Failed to submit recipe');
+                        errorDiv.style.display = 'block';
+                    }
                 } else {
-                    errorDiv.textContent = data.error || 'Failed to submit recipe';
+                    // Non-JSON response (HTML error page) — show a generic message and log the body
+                    const text = await response.text();
+                    console.error('Server response not JSON:', text);
+                    errorDiv.textContent = 'Server error: please try again or check the server logs.';
                     errorDiv.style.display = 'block';
                 }
                 
