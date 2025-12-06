@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from . import bp
 from .forms import RecipeForm
 from models import Recipe
-from extensions import db, limiter
+from extensions import db, limiter, csrf
 
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -112,7 +112,15 @@ def edit(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'], endpoint='delete_post')
 @login_required
+@csrf.exempt
 def delete(id):
+    # Validate CSRF token manually since we exempted this route
+    from app import validate_csrf
+    token = request.form.get("csrf_token")
+    if not validate_csrf(token):
+        flash("Invalid CSRF token", "danger")
+        return redirect(url_for('index'))
+    
     recipe = Recipe.query.get_or_404(id)
     if recipe.user_id != current_user.id and not current_user.is_admin:
         abort(403)
