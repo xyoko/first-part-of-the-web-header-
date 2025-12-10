@@ -157,88 +157,45 @@
         <section class="section">
             <div class="container">
                 <h2 class="section-title">You May Also Like</h2>
+                {% if related %}
                 <div class="related-recipes-grid">
+                    {% for rel_recipe in related %}
                     <div class="recipe-card">
-                        <div class="recipe-image" style="background-image: url('../src/assets/recipe-greek-salad.jpg')"></div>
+                        {% if rel_recipe.image %}
+                        <div class="recipe-image" style="background-image: url('{{ url_for('static', filename='uploads/' ~ rel_recipe.image) }}')"></div>
+                        {% else %}
+                        <div class="recipe-image" style="background-image: url('https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500')"></div>
+                        {% endif %}
                         <div class="recipe-content">
-                            <h3 class="recipe-name">Greek Salad</h3>
-                            <p class="recipe-description">Fresh Mediterranean salad with feta cheese</p>
+                            <h3 class="recipe-name">{{ rel_recipe.title }}</h3>
+                            <p class="recipe-description">{{ rel_recipe.description or (rel_recipe.instructions[:80] ~ '...') if rel_recipe.instructions else 'No description' }}</p>
                             <div class="recipe-meta">
                                 <div class="rating">
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star">★</span>
+                                    {% set rel_avg = rel_recipe.average_rating() or 0 %}
+                                    {% for i in range(5) %}
+                                    <span class="star {% if i < rel_avg %}filled{% endif %}">★</span>
+                                    {% endfor %}
                                 </div>
+                                {% if rel_recipe.cooking_time %}
                                 <div class="cook-time">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"/>
                                         <polyline points="12 6 12 12 16 14"/>
                                     </svg>
-                                    <span>15 min</span>
+                                    <span>{{ rel_recipe.cooking_time }} min</span>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="recipe-footer">
-                            <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
+                            <a href="{{ url_for('recipe_view', recipe_id=rel_recipe.id) }}" class="btn btn-secondary btn-full">View Recipe</a>
                         </div>
                     </div>
-
-                    <div class="recipe-card">
-                        <div class="recipe-image" style="background-image: url('../src/assets/recipe-pancakes.jpg')"></div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-name">Blueberry Pancakes</h3>
-                            <p class="recipe-description">Fluffy pancakes with fresh blueberries</p>
-                            <div class="recipe-meta">
-                                <div class="rating">
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                </div>
-                                <div class="cook-time">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>20 min</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="recipe-footer">
-                            <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
-                        </div>
-                    </div>
-
-                    <div class="recipe-card">
-                        <div class="recipe-image" style="background-image: url('../src/assets/recipe-fish-tacos.jpg')"></div>
-                        <div class="recipe-content">
-                            <h3 class="recipe-name">Fish Tacos</h3>
-                            <p class="recipe-description">Crispy fish tacos with cabbage slaw</p>
-                            <div class="recipe-meta">
-                                <div class="rating">
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star filled">★</span>
-                                    <span class="star">★</span>
-                                </div>
-                                <div class="cook-time">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>30 min</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="recipe-footer">
-                            <a href="/recipe-detail" class="btn btn-secondary btn-full">View Recipe</a>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <p style="text-align: center; color: #999;">No related recipes found in this category.</p>
+                {% endif %}
             </div>
         </section>
     </main>

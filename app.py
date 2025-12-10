@@ -143,6 +143,7 @@ def profile():
 
 @app.route("/profile/edit", methods=["POST"])
 @login_required
+@csrf.exempt
 def profile_edit():
     token = request.form.get("csrf_token")
     if not validate_csrf(token):
@@ -220,7 +221,15 @@ def recipe_view(recipe_id):
         user_rating = r.score if r else None
 
     comments = Comment.query.filter_by(recipe_id=recipe_id, is_removed=False).order_by(Comment.created_at.asc()).all()
-    return render_template("recipe-detail.html", recipe=recipe, ingredients=ingredients, avg_rating=avg, user_rating=user_rating, comments=comments)
+    
+    # Get related recipes (same category, excluding current recipe)
+    related = Recipe.query.filter(
+        Recipe.approved == True,
+        Recipe.id != recipe_id,
+        Recipe.category == recipe.category
+    ).order_by(Recipe.created_at.desc()).limit(3).all()
+    
+    return render_template("recipe-detail.html", recipe=recipe, ingredients=ingredients, avg_rating=avg, user_rating=user_rating, comments=comments, related=related)
 
 @app.route("/api/recipes/<int:recipe_id>/rate", methods=["POST"])
 @login_required

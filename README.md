@@ -2,6 +2,9 @@
 
 A Flask-based recipe sharing web app.
 
+# Admin creation
+By default to login to admin profile use email:admin@example.com password:123456 if db is not present/deleted or new is needed use the following command: python .\scripts\create_admin.py --username yourusername --reset --password "yourpassword"
+
 ## Quickstart (Local, development)
 
 1. Create a virtual environment and install dependencies
