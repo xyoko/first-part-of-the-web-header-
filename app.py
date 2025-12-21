@@ -12,6 +12,7 @@ from config import Config
 from models import User, Recipe, Rating, Comment
 from extensions import db, migrate, login_manager, talisman, limiter
 from extensions import csrf
+from flask_wtf.csrf import generate_csrf, validate_csrf as fw_validate_csrf
 from auth import bp as auth_bp
 from posts import bp as posts_bp
 
@@ -28,17 +29,25 @@ migrate.init_app(app, db)
 login_manager.init_app(app)
 login_manager.login_view = "login"
 limiter.init_app(app)
-# Initialize Talisman with a reasonable CSP for development; tighten for production
+# Initialize Talisman with a reasonable CSP and enforce HTTPS (redirects HTTP->HTTPS)
 # Allow fonts.googleapis and fonts.gstatic for Google Fonts and cdn.jsdelivr for Bootstrap
 # Allow 'data:' in img-src for Bootstrap inline SVG icons (form controls)
-talisman.init_app(app, content_security_policy={
-    'default-src': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-    'style-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com'],
-    'font-src': ["'self'", 'https://fonts.gstatic.com'],
-    'img-src': ["'self'", 'data:'],
-    'connect-src': ["'self'", 'https://cdn.jsdelivr.net']
-})
+talisman.init_app(
+    app,
+    content_security_policy={
+        'default-src': ["'self'"],
+        'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+        'style-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com'],
+        'font-src': ["'self'", 'https://fonts.gstatic.com'],
+        'img-src': ["'self'", 'data:'],
+        'connect-src': ["'self'", 'https://cdn.jsdelivr.net']
+    },
+    force_https=True,
+    strict_transport_security=True,
+    strict_transport_security_max_age=31536000,
+    strict_transport_security_include_subdomains=True,
+    strict_transport_security_preload=True,
+)
 
 # Enable CSRF protection for forms
 csrf.init_app(app)
@@ -48,21 +57,18 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(posts_bp)
 
 # -------------------------
-# Simple CSRF protection
+# CSRF integration using Flask-WTF
 # -------------------------
-def generate_csrf_token():
-    token = secrets.token_urlsafe(32)
-    session['csrf_token'] = token
-    return token
-
-def validate_csrf(token):
-    return token and session.get('csrf_token') and secrets.compare_digest(session.get('csrf_token'), token)
-
 @app.context_processor
 def inject_globals():
-    # inject csrf token and current_user into templates
-    token = session.get('csrf_token') or generate_csrf_token()
+    # generate a CSRF token via Flask-WTF so it matches CSRFProtect expectations
+    token = generate_csrf()
     return dict(csrf_token=token, current_user=current_user)
+
+@app.before_request
+def before_request():
+    # ensure session persists for CSRF cookie behavior
+    session.permanent = True
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -146,7 +152,9 @@ def profile():
 @csrf.exempt
 def profile_edit():
     token = request.form.get("csrf_token")
-    if not validate_csrf(token):
+    try:
+        fw_validate_csrf(token)
+    except Exception:
         flash("Invalid CSRF token", "danger")
         return redirect(url_for('profile'))
     username = request.form.get("username", "").strip()
@@ -235,11 +243,20 @@ def recipe_view(recipe_id):
 @login_required
 def rate_recipe(recipe_id):
     token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
-    if not validate_csrf(token):
+    try:
+        fw_validate_csrf(token)
+    except Exception:
         return jsonify({"error": "Invalid CSRF token"}), 400
 
-    score = int(request.form.get("score", 0))
-    if score < 1 or score > 5:
+    score = request.form.get("score", 0)
+    if not score:
+        return jsonify({"error": "Please select a rating"}), 400
+    
+    try:
+        score = int(score)
+        if score < 1 or score > 5:
+            return jsonify({"error": "Invalid score"}), 400
+    except (ValueError, TypeError):
         return jsonify({"error": "Invalid score"}), 400
 
     recipe = Recipe.query.get_or_404(recipe_id)
@@ -247,17 +264,101 @@ def rate_recipe(recipe_id):
     existing = Rating.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
     if existing:
         existing.score = score
+        message = "Your rating has been updated"
     else:
         new = Rating(score=score, user_id=current_user.id, recipe_id=recipe_id)
         db.session.add(new)
+        message = "Thank you for rating!"
     db.session.commit()
-    return jsonify({"success": True, "avg": recipe.average_rating()})
+    return jsonify({"success": True, "message": message, "avg_rating": recipe.average_rating()}), 200
+
+
+@app.route("/recipe/<int:recipe_id>/rate", methods=["POST"])
+@login_required
+def rate_recipe_form(recipe_id):
+    token = request.form.get("csrf_token")
+    try:
+        fw_validate_csrf(token)
+    except Exception:
+        flash("Invalid CSRF token", "danger")
+        return redirect(url_for('recipe_view', recipe_id=recipe_id))
+    
+    score = request.form.get("score", 0)
+    if not score:
+        flash("Please select a rating", "danger")
+        return redirect(url_for('recipe_view', recipe_id=recipe_id))
+    
+    try:
+        score = int(score)
+        if score < 1 or score > 5:
+            raise ValueError
+    except (ValueError, TypeError):
+        flash("Invalid rating", "danger")
+        return redirect(url_for('recipe_view', recipe_id=recipe_id))
+    
+    recipe = Recipe.query.get_or_404(recipe_id)
+    existing = Rating.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
+    if existing:
+        existing.score = score
+        flash("Your rating has been updated", "success")
+    else:
+        new = Rating(score=score, user_id=current_user.id, recipe_id=recipe_id)
+        db.session.add(new)
+        flash("Thank you for rating!", "success")
+    db.session.commit()
+    return redirect(url_for('recipe_view', recipe_id=recipe_id))
+
+
+@app.route("/recipe/<int:recipe_id>/comment", methods=["POST"])
+@login_required
+def add_comment(recipe_id):
+    token = request.form.get("csrf_token")
+    try:
+        fw_validate_csrf(token)
+    except Exception:
+        flash("Invalid CSRF token", "danger")
+        return redirect(url_for('recipe_view', recipe_id=recipe_id))
+    
+    body = request.form.get("body", "").strip()
+    if not body:
+        flash("Please enter a comment", "danger")
+        return redirect(url_for('recipe_view', recipe_id=recipe_id))
+    
+    recipe = Recipe.query.get_or_404(recipe_id)
+    comment = Comment(body=body, user_id=current_user.id, recipe_id=recipe_id)
+    db.session.add(comment)
+    db.session.commit()
+    flash("Your comment has been posted!", "success")
+    return redirect(url_for('recipe_view', recipe_id=recipe_id))
+
+
+@app.route("/recipe/<int:recipe_id>/comment/<int:comment_id>/delete", methods=["POST"])
+@login_required
+def delete_comment(recipe_id, comment_id):
+    token = request.form.get("csrf_token")
+    try:
+        fw_validate_csrf(token)
+    except Exception:
+        flash("Invalid CSRF token", "danger")
+        return redirect(url_for('recipe_view', recipe_id=recipe_id))
+    
+    comment = Comment.query.get_or_404(comment_id)
+    
+    if comment.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    
+    comment.is_removed = True
+    db.session.commit()
+    flash("Comment deleted", "info")
+    return redirect(url_for('recipe_view', recipe_id=recipe_id))
 
 @app.route("/api/recipes/<int:recipe_id>/comment", methods=["POST"])
 @login_required
 def comment_recipe(recipe_id):
     token = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
-    if not validate_csrf(token):
+    try:
+        fw_validate_csrf(token)
+    except Exception:
         return jsonify({"error": "Invalid CSRF token"}), 400
 
     body = request.form.get("body", "").strip()
@@ -372,4 +473,12 @@ if __name__ == "__main__":
     with app.app_context():
         # create tables if missing
         db.create_all()
-    app.run(debug=True)
+    # Prefer HTTPS. For local development set the environment variable
+    # `ENABLE_DEV_HTTPS=1` to run with a temporary self-signed certificate (Flask adhoc).
+    # In production, run behind a proper TLS-terminating server (gunicorn/nginx).
+    enable_dev_https = os.environ.get('ENABLE_DEV_HTTPS', '0') == '1'
+    if enable_dev_https and app.config.get('DEBUG', False):
+        # Use an ad-hoc certificate for local development
+        app.run(debug=True, ssl_context='adhoc')
+    else:
+        app.run(debug=app.config.get('DEBUG', False))

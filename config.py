@@ -11,6 +11,8 @@ class BaseConfig:
     SESSION_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SECURE = os.environ.get('REMEMBER_COOKIE_SECURE', 'False').lower() == 'true'
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024
+    # Prefer HTTPS when generating URLs
+    PREFERRED_URL_SCHEME = 'https'
 
 
 class DevelopmentConfig(BaseConfig):

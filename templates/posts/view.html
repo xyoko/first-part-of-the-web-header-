@@ -8,20 +8,156 @@
   {% if post.image %}
   <img src="{{ url_for('static', filename='uploads/' ~ post.image) }}" class="img-fluid mb-3" alt="{{ post.title }}">
   {% endif %}
+  
+  <!-- Rating Section -->
+  <div class="rating-section mb-4 p-3 bg-light rounded">
+    <h5>Recipe Rating</h5>
+    {% set avg_rating = post.average_rating() or 0 %}
+    <div class="mb-3">
+      <div class="rating-display">
+        {% for i in range(5) %}
+          <span class="star {% if i < avg_rating %}filled{% endif %}">★</span>
+        {% endfor %}
+        <span class="ms-2"><strong>{{ "%.1f"|format(avg_rating) }}/5.0</strong> ({{ post.ratings | length }} ratings)</span>
+      </div>
+    </div>
+    
+    {% if current_user.is_authenticated %}
+      <form method="POST" action="{{ url_for('posts.rate_recipe', id=post.id) }}" class="rating-form">
+        {% if rating_form %}{{ rating_form.hidden_tag() }}{% endif %}
+        <div class="mb-2">
+          <label for="score" class="form-label">Your Rating:</label>
+          <div class="rating-input d-flex gap-2 align-items-center">
+            {% for i in range(1, 6) %}
+              <div class="form-check">
+                <input class="form-check-input rating-radio" type="radio" id="star{{ i }}" name="score" value="{{ i }}">
+                <label class="form-check-label rating-label" for="star{{ i }}">★</label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm mt-2">Submit Rating</button>
+      </form>
+    {% else %}
+      <p><a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary">Login to rate</a></p>
+    {% endif %}
+  </div>
+  
   <div class="mb-3">{% if post.description %}<p>{{ post.description }}</p>{% endif %}</div>
   <div class="mb-3">{% if post.instructions %}<h4>Instructions</h4><div>{{ post.instructions }}</div>{% endif %}</div>
 </article>
 
-<section>
-  <h4>Comments</h4>
-  {% for c in post.comments %}
-    <div class="mb-2">
-      <strong>{{ c.user.username }}</strong> <small class="text-muted">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-      <p>{{ c.body }}</p>
+<!-- Comments Section -->
+<section class="comments-section">
+  <h4>Comments ({{ post.comments | selectattr('is_removed', 'equalto', False) | list | length }})</h4>
+  
+  {% if current_user.is_authenticated %}
+    <div class="comment-form mb-4 p-3 border rounded">
+      <h5>Add Your Comment</h5>
+      <form method="POST" action="{{ url_for('posts.add_comment', id=post.id) }}">
+        {% if comment_form %}{{ comment_form.hidden_tag() }}{% endif %}
+        <div class="mb-2">
+          <label for="body" class="form-label">Comment:</label>
+          {% if comment_form %}
+            {{ comment_form.body(class="form-control", rows="4", placeholder="Share your thoughts about this recipe...") }}
+            {% if comment_form.body.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in comment_form.body.errors %}
+                  <div>{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% else %}
+            <textarea name="body" id="body" class="form-control" rows="4" placeholder="Share your thoughts about this recipe..." required></textarea>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+      </form>
     </div>
   {% else %}
-  <p>No comments yet.</p>
-  {% endfor %}
+    <p class="mb-3"><a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Login to comment</a></p>
+  {% endif %}
+  
+  <!-- Comments List -->
+  <div class="comments-list">
+    {% set active_comments = post.comments | selectattr('is_removed', 'equalto', False) | list %}
+    {% for c in active_comments %}
+      <div class="comment-item mb-3 p-3 border-start border-3 bg-light">
+        <div class="comment-header d-flex justify-content-between align-items-start">
+          <div>
+            <strong class="comment-author">{{ c.user.username }}</strong>
+            <small class="text-muted">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+          </div>
+          {% if current_user.is_authenticated and (current_user.id == c.user_id or current_user.is_admin) %}
+            <form method="POST" action="{{ url_for('posts.delete_comment', comment_id=c.id) }}" style="display: inline;">
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this comment?');">Delete</button>
+            </form>
+          {% endif %}
+        </div>
+        <p class="comment-body mt-2 mb-0">{{ c.body }}</p>
+      </div>
+    {% else %}
+      <p class="text-muted">No comments yet. Be the first to comment!</p>
+    {% endfor %}
+  </div>
 </section>
+
+<style>
+.rating-input {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.form-check {
+  margin: 0;
+}
+
+.rating-radio {
+  display: none;
+}
+
+.rating-label {
+  font-size: 2rem;
+  color: #ddd;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.rating-radio:checked + .rating-label {
+  color: #ffc107;
+}
+
+.rating-label:hover {
+  color: #ffc107;
+}
+
+.star {
+  color: #ddd;
+  font-size: 1.5rem;
+  display: inline-block;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.comment-item {
+  transition: background-color 0.2s;
+}
+
+.comment-item:hover {
+  background-color: #f9f9f9;
+}
+
+.comment-body {
+  line-height: 1.6;
+  color: #333;
+}
+</style>
 
 {% endblock %}

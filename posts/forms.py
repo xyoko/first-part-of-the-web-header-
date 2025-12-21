@@ -14,3 +14,13 @@ class RecipeForm(FlaskForm):
     servings = IntegerField('Servings', validators=[Optional(), NumberRange(min=1)])
     image = FileField('Image', validators=[FileAllowed(['jpg','jpeg','png','gif'], 'Images only!')])
     submit = SubmitField('Save')
+
+
+class CommentForm(FlaskForm):
+    body = TextAreaField('Comment', validators=[DataRequired(), Length(min=1, max=1000)])
+    submit = SubmitField('Post Comment')
+
+
+class RatingForm(FlaskForm):
+    score = IntegerField('Rating', validators=[DataRequired(), NumberRange(min=1, max=5)])
+    submit = SubmitField('Submit Rating')

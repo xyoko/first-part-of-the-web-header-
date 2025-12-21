@@ -1,11 +1,11 @@
 import os
 import json
-from flask import render_template, redirect, url_for, flash, request, current_app, abort
+from flask import render_template, redirect, url_for, flash, request, current_app, abort, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from . import bp
-from .forms import RecipeForm
-from models import Recipe
+from .forms import RecipeForm, CommentForm, RatingForm
+from models import Recipe, Comment, Rating
 from extensions import db, limiter, csrf
 
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif'}
@@ -115,9 +115,11 @@ def edit(id):
 @csrf.exempt
 def delete(id):
     # Validate CSRF token manually since we exempted this route
-    from app import validate_csrf
+    from flask_wtf.csrf import validate_csrf as fw_validate_csrf
     token = request.form.get("csrf_token")
-    if not validate_csrf(token):
+    try:
+        fw_validate_csrf(token)
+    except Exception:
         flash("Invalid CSRF token", "danger")
         return redirect(url_for('index'))
     
@@ -136,4 +138,67 @@ def view(id):
     # only show unapproved recipes to their owners or admins
     if not recipe.approved and (not current_user.is_authenticated or (not current_user.is_admin and current_user.id != recipe.user_id)):
         abort(404)
-    return render_template('posts/view.html', post=recipe)
+    
+    comment_form = CommentForm()
+    rating_form = RatingForm()
+    
+    return render_template('posts/view.html', post=recipe, comment_form=comment_form, rating_form=rating_form)
+
+
+@bp.route('/<int:id>/rate', methods=['POST'], endpoint='rate_recipe')
+@login_required
+def rate_recipe(id):
+    recipe = Recipe.query.get_or_404(id)
+    form = RatingForm()
+    
+    if form.validate_on_submit():
+        # Check if user already rated this recipe
+        existing_rating = Rating.query.filter_by(user_id=current_user.id, recipe_id=id).first()
+        
+        if existing_rating:
+            existing_rating.score = form.score.data
+            flash('Your rating has been updated', 'success')
+        else:
+            rating = Rating(score=form.score.data, user_id=current_user.id, recipe_id=id)
+            db.session.add(rating)
+            flash('Thank you for rating this recipe!', 'success')
+        
+        db.session.commit()
+    
+    return redirect(url_for('posts.view_post', id=id))
+
+
+@bp.route('/<int:id>/comment', methods=['POST'], endpoint='add_comment')
+@login_required
+def add_comment(id):
+    recipe = Recipe.query.get_or_404(id)
+    form = CommentForm()
+    
+    if form.validate_on_submit():
+        comment = Comment(body=form.body.data, user_id=current_user.id, recipe_id=id)
+        db.session.add(comment)
+        db.session.commit()
+        flash('Your comment has been posted!', 'success')
+    else:
+        flash('Please enter a valid comment', 'danger')
+    
+    return redirect(url_for('posts.view_post', id=id))
+
+
+@bp.route('/comment/<int:comment_id>/delete', methods=['POST'], endpoint='delete_comment')
+@login_required
+@csrf.exempt
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    recipe_id = comment.recipe_id
+    
+    # Check if user is comment owner or admin
+    if comment.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    
+    comment.is_removed = True
+    db.session.commit()
+    flash('Comment deleted', 'info')
+    
+    return redirect(url_for('posts.view_post', id=recipe_id))
+
